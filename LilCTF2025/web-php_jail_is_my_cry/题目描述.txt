@@ -1,0 +1,15 @@
+题目
+php_jail_is_my_cry
+
+
+
+
+**出题**：Kengwang
+
+**难度**：中等
+
+PHP Jail is my CRY
+
+> 请注意附件中的代码存在一行需要你补充的代码, 已经注释表明, 否则会存在问题
+> 
+> 最终需要执行 /readflag
