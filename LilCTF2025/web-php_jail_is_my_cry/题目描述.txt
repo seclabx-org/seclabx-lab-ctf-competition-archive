@@ -13,3 +13,8 @@ PHP Jail is my CRY
 > 请注意附件中的代码存在一行需要你补充的代码, 已经注释表明, 否则会存在问题
 > 
 > 最终需要执行 /readflag
+
+
+
+
+附件（暂时使用别人的在线连接）：https://download.imxbt.cn/ctf/LilCTF2025/Web/web-php_jail_is_my_cry.zip

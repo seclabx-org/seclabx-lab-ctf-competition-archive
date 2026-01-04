@@ -9,3 +9,11 @@
 **难度**：简单
 
 还记得25年3月13日的那个晚上，Misc手们都在干嘛吗
+
+
+
+
+
+附件（暂时使用别人的在线连接）：https://download.imxbt.cn/ctf/LilCTF2025/Misc/misc-public-ahead.zip
+
+flag(静态附件题)：LILCTF{Z1pCRyp70_1s_n0t_5ecur3}

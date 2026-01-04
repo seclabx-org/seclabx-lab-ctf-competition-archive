@@ -8,3 +8,9 @@ blade_cc
 **难度**：困难
 
 万恶的n1ght，留出了一个反序列化入口，但是他做了黑名单和不出网，你能想办法完成这个挑战吗？
+
+
+
+
+
+附件（暂时使用别人的在线连接）：https://download.imxbt.cn/ctf/LilCTF2025/Web/web-blade-cc.zip
