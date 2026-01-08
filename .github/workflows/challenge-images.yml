@@ -57,8 +57,11 @@ jobs:
             dir=$(dirname "$file")
             while [ "$dir" != "." ] && [ "$dir" != "/" ]; do
               if [ -f "$dir/README.md" ] || [ -f "$dir/challenge.yaml" ]; then
-                dirs+=("$dir")
-                break
+                depth=$(echo "$dir" | awk -F/ '{print NF}')
+                if [ "$depth" -ge 3 ]; then
+                  dirs+=("$dir")
+                  break
+                fi
               fi
               dir=$(dirname "$dir")
             done
@@ -102,6 +105,11 @@ jobs:
 
           while IFS= read -r dir; do
             [ -z "$dir" ] && continue
+            depth=$(echo "$dir" | awk -F/ '{print NF}')
+            if [ "$depth" -lt 3 ]; then
+              echo "Invalid challenge path (expect competition/year/name): $dir" >&2
+              exit 1
+            fi
             if [ ! -f "$dir/README.md" ]; then
               echo "Missing README.md: $dir" >&2
               exit 1
