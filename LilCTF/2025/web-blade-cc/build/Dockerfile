@@ -1,4 +1,4 @@
-FROM openjdk:8-slim-bullseye
+FROM openjdk:8-jre-slim
 
 # 制作者信息
 LABEL auther_template="CTF-Archives"
