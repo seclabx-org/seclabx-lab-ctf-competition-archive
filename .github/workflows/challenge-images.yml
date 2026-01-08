@@ -1,0 +1,168 @@
+name: build-challenge-images
+
+on:
+  pull_request:
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs:
+      challenge_path:
+        description: "Challenge path, e.g. LilCTF/2025/web-ez-bottle"
+        required: true
+        type: string
+      tag_prefix:
+        description: "Tag prefix for manual build"
+        required: true
+        type: choice
+        options:
+          - dev
+          - latest
+        default: dev
+      force_rebuild:
+        description: "Rebuild even if image tag already exists"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Login to Aliyun Registry
+        run: |
+          echo "${{ secrets.ALIYUN_PASS }}" | docker login \
+            "${{ secrets.ALIYUN_REGISTRY }}" \
+            --username "${{ secrets.ALIYUN_USER }}" \
+            --password-stdin
+
+      - name: Resolve changed challenge dirs (PR)
+        if: github.event_name == 'pull_request'
+        id: changed
+        run: |
+          git fetch origin "${{ github.base_ref }}"
+          base="origin/${{ github.base_ref }}"
+          files=$(git diff --name-only "$base"...HEAD)
+          if [ -z "$files" ]; then
+            echo "dirs=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          dirs=()
+          while IFS= read -r file; do
+            dir=$(dirname "$file")
+            while [ "$dir" != "." ] && [ "$dir" != "/" ]; do
+              if [ -f "$dir/README.md" ] || [ -f "$dir/challenge.yaml" ]; then
+                dirs+=("$dir")
+                break
+              fi
+              dir=$(dirname "$dir")
+            done
+          done <<< "$files"
+
+          if [ "${#dirs[@]}" -eq 0 ]; then
+            echo "dirs=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          unique=$(printf "%s\n" "${dirs[@]}" | sort -u)
+          echo "dirs<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$unique" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve manual challenge dir
+        if: github.event_name == 'workflow_dispatch'
+        id: manual
+        run: |
+          dir="${{ inputs.challenge_path }}"
+          if [ -z "$dir" ]; then
+            echo "challenge_path is required" >&2
+            exit 1
+          fi
+          echo "dirs<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$dir" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Validate challenge structure
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            dirs="${{ steps.changed.outputs.dirs }}"
+          else
+            dirs="${{ steps.manual.outputs.dirs }}"
+          fi
+
+          if [ -z "$dirs" ]; then
+            echo "No challenge directories to validate."
+            exit 0
+          fi
+
+          while IFS= read -r dir; do
+            [ -z "$dir" ] && continue
+            if [ ! -f "$dir/README.md" ]; then
+              echo "Missing README.md: $dir" >&2
+              exit 1
+            fi
+            year_dir="$(dirname "$dir")"
+            if [ ! -f "$year_dir/SOURCE.md" ]; then
+              echo "Missing SOURCE.md in competition year dir: $year_dir" >&2
+              exit 1
+            fi
+          done <<< "$dirs"
+
+      - name: Build and push images
+        env:
+          REGISTRY: ${{ secrets.ALIYUN_REGISTRY }}
+          REPO: seclabx/ctf
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TAG_PREFIX: ${{ inputs.tag_prefix }}
+          FORCE_REBUILD: ${{ inputs.force_rebuild }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            dirs="${{ steps.changed.outputs.dirs }}"
+          else
+            dirs="${{ steps.manual.outputs.dirs }}"
+          fi
+
+          if [ -z "$dirs" ]; then
+            echo "No challenge directories to build."
+            exit 0
+          fi
+
+          while IFS= read -r dir; do
+            [ -z "$dir" ] && continue
+            comp=$(echo "$dir" | cut -d/ -f1)
+            year=$(echo "$dir" | cut -d/ -f2)
+            challenge=$(echo "$dir" | cut -d/ -f3)
+            tag="${comp}-${year}-${challenge}"
+            tag=$(echo "$tag" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              full_tag="pr-${PR_NUMBER}-${tag}"
+            else
+              full_tag="${TAG_PREFIX}-${tag}"
+            fi
+
+            image="${REGISTRY}/${REPO}:${full_tag}"
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$FORCE_REBUILD" != "true" ]; then
+              if docker manifest inspect "$image" >/dev/null 2>&1; then
+                echo "Image exists, skipping: $image"
+                continue
+              fi
+            fi
+
+            if [ -f "$dir/build/Dockerfile" ]; then
+              echo "Building $image from $dir/build"
+              docker build -t "$image" -f "$dir/build/Dockerfile" "$dir/build"
+              docker push "$image"
+            elif [ -f "$dir/Dockerfile" ]; then
+              echo "Building $image from $dir"
+              docker build -t "$image" "$dir"
+              docker push "$image"
+            else
+              echo "No Dockerfile, skip build: $dir"
+            fi
+          done <<< "$dirs"
