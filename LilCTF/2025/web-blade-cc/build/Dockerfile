@@ -1,4 +1,4 @@
-FROM openjdk:8-jre-slim
+FROM eclipse-temurin:8-jre-jammy
 
 # 制作者信息
 LABEL auther_template="CTF-Archives"
