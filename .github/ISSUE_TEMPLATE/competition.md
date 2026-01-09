@@ -1,7 +1,7 @@
 ---
 name: 赛事收录任务
 about: 提交需要收录的赛事与题目列表
-title: "收录：赛事名-年份"
+title: "收录：<赛事名>-<年份>-<范围>"
 labels: ["competition"]
 assignees: ""
 ---
