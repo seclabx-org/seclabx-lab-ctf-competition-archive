@@ -1,8 +1,4 @@
-~~需声明来源，可直接复制下方内容作为比赛简介~~
-
-
-
-
+## 比赛简介
 
 [LilCTF2025Github仓库](https://github.com/Lil-House/LilCTF-2025)
 

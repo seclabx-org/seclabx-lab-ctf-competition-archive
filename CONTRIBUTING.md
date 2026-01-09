@@ -5,7 +5,10 @@
 ## 协作流程
 
 - 在 Issues 使用“赛事收录任务”模板创建任务
-- Fork 仓库并创建分支：`feat/<赛事>-<题目>`（例如：`feat/LilCTF-web-ez-bottle`或者`feat/issue-23`）
+- Fork 仓库并创建分支：`feat/<赛事>-<题目>`
+  例如：
+  - `feat/LilCTF-web-ez-bottle`
+  - `feat/issue-23`
 - 每个 Issue 对应一个 PR，一个 Issue 可包含同一赛事/同一年份的多道题
 - PR 目标分支必须为 `develop`
 - 等待 Review 与 CI/CD 检查通过
@@ -25,25 +28,63 @@ git checkout develop
 git pull upstream develop
 ```
 
-3) 创建分支并开发
+```
+示例：
+git clone https://github.com/<your-username>/seclabx-lab-ctf-competition-archive.git
+cd seclabx-lab-ctf-competition-archive
+git remote add upstream https://github.com/seclabx-org/seclabx-lab-ctf-competition-archive.git
+git fetch upstream
+git checkout develop
+git pull upstream develop
+```
+
+3) 创建分支并开发（基于 develop）
+
 ```bash
-git checkout -b feat/<赛事>-<题目>
+git checkout -b feat/<标识>
+```
+
+```
+# 示例
+# Issue 驱动（推荐）
+git checkout -b feat/issue-23
+
+# 单个题目
+git checkout -b feat/LilCTF-web-ez-bottle
 ```
 
 4) 添加题目内容并提交
+
 ```bash
 git add .
-git commit -m "add: <赛事>-<题目>"
+git commit -m "add: <赛事> <年份> <范围说明>"
+```
+
+```
+# 示例
+# 单个题目
+git commit -m "add: LilCTF 2025 web ez-bottle"
+
+# 同一赛事多个题目
+git commit -m "add: LilCTF 2025 web challenges"
+
+# 同一赛事多个类型
+git commit -m "add: LilCTF 2025 web and misc challenges"
 ```
 
 5) 推送到自己的 Fork
+
 ```bash
 git push origin feat/<赛事>-<题目>
 ```
 
 6) 发起 PR
 - 目标分支：`develop`
-- 关联对应 Issue
+- 在 PR 描述中使用 Closes #<issue_id> 关联对应 Issue
+  示例：
+  - Closes #23
+
+> 若 PR 未通过 Review，Issue 保持开启，按 Review 意见修改后重新提交 PR。
 
 ## 维护者操作步骤（审核与合并）
 
@@ -55,14 +96,19 @@ git push origin feat/<赛事>-<题目>
 - 确认命名规范与来源说明
 - 等待 CI 通过
 
+> CI 未通过时请勿合并 PR(请根据 CI 日志修复后重新提交)
+
 3) 触发手动构建（如需）
 - Actions → `build-challenge-images` → `Run workflow`
 
 4) 合并到 `develop`
 - PR 通过后合并
+- 确认 PR 已关联 Issue
+- 合并后关闭 Issue
 
 5) 上线发布（如需）
 - Actions 手动触发 `latest-<题目tag>` 构建
+
 
 ## 目录与命名规范
 
@@ -116,6 +162,11 @@ XCTF/2023/pwn-heap-baby
 - 生产发布 tag：`latest-<题目tag>`
 - 完整镜像示例：`crpi-7st94yd1uskrhjrz.cn-chengdu.personal.cr.aliyuncs.com/seclabx/ctf:latest-lilctf-2025-web-ez-bottle`
 
+## 镜像清理（个人版替代方案）
+
+- 仓库不支持生命周期时，使用定时清理工作流 `cleanup-images`
+- 每周自动删除 `pr-*` 与 `dev-*` 标签
+
 ## 模板使用
 
 - PR 必须使用 PR 模板：`.github/PULL_REQUEST_TEMPLATE.md`
@@ -135,3 +186,10 @@ XCTF/2023/pwn-heap-baby
   - `challenge_path`：题目路径（如 `LilCTF/2025/web-ez-bottle`）
   - `tag_prefix`：`dev` 或 `latest`
   - `force_rebuild`：需要覆盖时勾选
+
+## 手动清理镜像（个人版）
+
+- 进入仓库 → Actions → 选择 `cleanup-images`
+- 点击 `Run workflow`
+- 将 `dry_run` 设为 `false`（默认 `true` 仅列出不删除）
+- 将自动删除所有 `pr-*` 与 `dev-*` 标签
