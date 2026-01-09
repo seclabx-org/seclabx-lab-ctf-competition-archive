@@ -6,10 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Only list tags without deleting"
+        description: "true=only list, false=delete"
         required: false
-        type: boolean
-        default: true
+        default: "true"
 
 jobs:
   cleanup:

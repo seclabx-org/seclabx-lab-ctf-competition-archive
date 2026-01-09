@@ -75,10 +75,16 @@ git commit -m "add: LilCTF 2025 web and misc challenges"
 5) 推送到自己的 Fork
 
 ```bash
-git push origin feat/<赛事>-<题目>
+git push origin feat/<标识>
+```
+
+```
+# 示例
+git push origin feat/issue-23
 ```
 
 6) 发起 PR
+
 - 目标分支：`develop`
 - 在 PR 描述中使用 Closes #<issue_id> 关联对应 Issue
   示例：
