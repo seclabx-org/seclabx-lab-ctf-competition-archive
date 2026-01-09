@@ -20,51 +20,51 @@ jobs:
           REPO: seclabx/ctf
           USERNAME: ${{ secrets.ALIYUN_USER }}
           PASSWORD: ${{ secrets.ALIYUN_PASS }}
-          DRY_RUN: ${{ inputs.dry_run }}
+          DRY_RUN: ${{ inputs.dry_run || 'true' }}
         run: |
           python - <<'PY'
-import base64
-import json
-import os
-import urllib.request
+          import base64
+          import json
+          import os
+          import urllib.request
 
-registry = os.environ.get("REGISTRY")
-repo = os.environ.get("REPO")
-username = os.environ.get("USERNAME")
-password = os.environ.get("PASSWORD")
-dry_run = os.environ.get("DRY_RUN", "true").lower() == "true"
+          registry = os.environ.get("REGISTRY")
+          repo = os.environ.get("REPO")
+          username = os.environ.get("USERNAME")
+          password = os.environ.get("PASSWORD")
+          dry_run = os.environ.get("DRY_RUN", "true").lower() == "true"
 
-if not all([registry, repo, username, password]):
-    raise SystemExit("Missing registry credentials in secrets.")
+          if not all([registry, repo, username, password]):
+              raise SystemExit("Missing registry credentials in secrets.")
 
-auth = base64.b64encode(f"{username}:{password}".encode()).decode()
-headers = {
-    "Authorization": f"Basic {auth}",
-    "Accept": "application/vnd.docker.distribution.manifest.v2+json",
-}
+          auth = base64.b64encode(f"{username}:{password}".encode()).decode()
+          headers = {
+              "Authorization": f"Basic {auth}",
+              "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+          }
 
-tags_url = f"https://{registry}/v2/{repo}/tags/list"
-req = urllib.request.Request(tags_url, headers=headers)
-with urllib.request.urlopen(req) as resp:
-    data = json.loads(resp.read().decode())
+          tags_url = f"https://{registry}/v2/{repo}/tags/list"
+          req = urllib.request.Request(tags_url, headers=headers)
+          with urllib.request.urlopen(req) as resp:
+              data = json.loads(resp.read().decode())
 
-tags = data.get("tags") or []
-targets = [t for t in tags if t.startswith("pr-") or t.startswith("dev-")]
+          tags = data.get("tags") or []
+          targets = [t for t in tags if t.startswith("pr-") or t.startswith("dev-")]
 
-print(f"Found {len(targets)} tags to clean.")
-for tag in targets:
-    manifest_url = f"https://{registry}/v2/{repo}/manifests/{tag}"
-    head_req = urllib.request.Request(manifest_url, headers=headers, method="HEAD")
-    with urllib.request.urlopen(head_req) as head_resp:
-        digest = head_resp.headers.get("Docker-Content-Digest")
-    if not digest:
-        print(f"Skip {tag}: no digest")
-        continue
-    delete_url = f"https://{registry}/v2/{repo}/manifests/{digest}"
-    if dry_run:
-        print(f"DRY RUN delete: {tag} -> {digest}")
-        continue
-    del_req = urllib.request.Request(delete_url, headers=headers, method="DELETE")
-    with urllib.request.urlopen(del_req) as del_resp:
-        print(f"Deleted {tag}: {del_resp.status}")
-PY
+          print(f"Found {len(targets)} tags to clean.")
+          for tag in targets:
+              manifest_url = f"https://{registry}/v2/{repo}/manifests/{tag}"
+              head_req = urllib.request.Request(manifest_url, headers=headers, method="HEAD")
+              with urllib.request.urlopen(head_req) as head_resp:
+                  digest = head_resp.headers.get("Docker-Content-Digest")
+              if not digest:
+                  print(f"Skip {tag}: no digest")
+                  continue
+              delete_url = f"https://{registry}/v2/{repo}/manifests/{digest}"
+              if dry_run:
+                  print(f"DRY RUN delete: {tag} -> {digest}")
+                  continue
+              del_req = urllib.request.Request(delete_url, headers=headers, method="DELETE")
+              with urllib.request.urlopen(del_req) as del_resp:
+                  print(f"Deleted {tag}: {del_resp.status}")
+          PY
