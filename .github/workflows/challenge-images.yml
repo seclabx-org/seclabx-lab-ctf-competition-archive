@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - develop
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       challenge_path:
@@ -40,13 +43,21 @@ jobs:
             --username "${{ secrets.ALIYUN_USER }}" \
             --password-stdin
 
-      - name: Resolve changed challenge dirs (PR)
-        if: github.event_name == 'pull_request'
+      - name: Resolve changed challenge dirs
+        if: github.event_name != 'workflow_dispatch'
         id: changed
         run: |
-          git fetch origin "${{ github.base_ref }}"
-          base="origin/${{ github.base_ref }}"
-          files=$(git diff --name-only "$base"...HEAD)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin "${{ github.base_ref }}"
+            base="origin/${{ github.base_ref }}"
+            files=$(git diff --name-only "$base"...HEAD)
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            before="${{ github.event.before }}"
+            after="${{ github.event.after }}"
+            files=$(git diff --name-only "$before" "$after")
+          else
+            files=""
+          fi
           if [ -z "$files" ]; then
             echo "dirs=" >> "$GITHUB_OUTPUT"
             exit 0
@@ -92,10 +103,10 @@ jobs:
 
       - name: Validate challenge structure
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            dirs="${{ steps.changed.outputs.dirs }}"
-          else
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             dirs="${{ steps.manual.outputs.dirs }}"
+          else
+            dirs="${{ steps.changed.outputs.dirs }}"
           fi
 
           if [ -z "$dirs" ]; then
@@ -129,10 +140,10 @@ jobs:
           TAG_PREFIX: ${{ inputs.tag_prefix }}
           FORCE_REBUILD: ${{ inputs.force_rebuild }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            dirs="${{ steps.changed.outputs.dirs }}"
-          else
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             dirs="${{ steps.manual.outputs.dirs }}"
+          else
+            dirs="${{ steps.changed.outputs.dirs }}"
           fi
 
           if [ -z "$dirs" ]; then
@@ -150,6 +161,8 @@ jobs:
 
             if [ "${{ github.event_name }}" = "pull_request" ]; then
               full_tag="pr-${PR_NUMBER}-${tag}"
+            elif [ "${{ github.event_name }}" = "push" ]; then
+              full_tag="latest-${tag}"
             else
               full_tag="${TAG_PREFIX}-${tag}"
             fi

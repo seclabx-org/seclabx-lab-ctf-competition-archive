@@ -116,6 +116,11 @@ XCTF/2023/pwn-heap-baby
 - 生产发布 tag：`latest-<题目tag>`
 - 完整镜像示例：`crpi-7st94yd1uskrhjrz.cn-chengdu.personal.cr.aliyuncs.com/seclabx/ctf:latest-lilctf-2025-web-ez-bottle`
 
+## 镜像清理（个人版替代方案）
+
+- 仓库不支持生命周期时，使用定时清理工作流 `cleanup-images`
+- 每周自动删除 `pr-*` 与 `dev-*` 标签
+
 ## 模板使用
 
 - PR 必须使用 PR 模板：`.github/PULL_REQUEST_TEMPLATE.md`
@@ -135,3 +140,10 @@ XCTF/2023/pwn-heap-baby
   - `challenge_path`：题目路径（如 `LilCTF/2025/web-ez-bottle`）
   - `tag_prefix`：`dev` 或 `latest`
   - `force_rebuild`：需要覆盖时勾选
+
+## 手动清理镜像（个人版）
+
+- 进入仓库 → Actions → 选择 `cleanup-images`
+- 点击 `Run workflow`
+- 将 `dry_run` 设为 `false`（默认 `true` 仅列出不删除）
+- 将自动删除所有 `pr-*` 与 `dev-*` 标签
